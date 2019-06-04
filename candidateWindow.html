@@ -24,23 +24,27 @@
                 console.log(result);
                 resultEl.innerHTML = '';
                 for(var i = 0; i < result.length; i++) {
-                    resultEl.innerHTML += result[i].FirstName.toString() + " " + result[i].LastName.toString() + "<br/>";
+                    resultEl.innerHTML += result[i].id.toString() + " : " + result[i].FirstName.toString() + " " + result[i].LastName.toString() + "<br/>";
                 }
                     
             });
             ipc.on("csvData", function(evt, result){
-            var rows = new Array;
-            rows = result;
+            var rows = result;
             console.log(rows);
 
             let csvContent = "data:text/csv;charset=utf-8,";
 
-            rows.forEach(function(rowArray) {
-                let row = rowArray.join(",");
-                csvContent += row + "\r\n";
-            });
-            var encodedUri = encodeURI(csvContent);
-            window.open(encodedUri);
+            // rows.forEach(function(rowArray) {
+            //     let row = rowArray.join(",");
+            //     csvContent += row + "\r\n";
+            // });
+            var encodedUri = encodeURI(rows);
+            //window.open(rows);
+            var link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "Candidates.csv");
+            document.body.appendChild(link);
+            link.click();
         });
             
         document.getElementById('download').addEventListener('click', () => {

@@ -1,7 +1,8 @@
 const { app, BrowserWindow, ipcMain, Menu } = require('electron');
 const path = require('path');
 const url = require('url');
-// test
+//process.env.NODE_ENV = 'production';
+
 
 var knex = require('knex')({
     client: "sqlite3",
@@ -12,12 +13,6 @@ var knex = require('knex')({
 });
 
 app.on("ready", () => {
-
-    // knex.select("FirstName").from("Users")
-    //     .returning()
-    //     .then(data => {    
-    //         console.log(data); 
-    //     });
 
     knex.schema.hasTable('Users').then(function(exists) {
         if (!exists) {
@@ -55,9 +50,8 @@ app.on("ready", () => {
         mainWindow.setKiosk(true);
         knex.select("FirstName").from("Users")
         .returning()
-        .then(data => {    
-            console.log(data);         
-            if (data.length < 1){
+        .then(data => {          
+            if (data.length < 1 && process.env.NODE_ENV !== 'production'){
                 console.log("No Users found so Adding some now")
                 var insert1 = [{FirstName: 'Test', LastName: 'Then'},{ FirstName: 'Delete', LastName: 'Me'}]
                 knex.insert(insert1).into("Users")
@@ -113,13 +107,8 @@ app.on("ready", () => {
     ipcMain.on('download-csv', function() {
         knex.select().from("Users").returning()
         .then(data => {  
-
-            var dataArray = Object.values(data);
-
-            var dataArray = Object.keys(data).map(function(k) {
-                return [+k, data[k]];
-                
-            });    
+            var dataArray = arrayToCSV(data);     
+            console.log(dataArray);
             candidateWindow.webContents.send("csvData", dataArray);
         });        
     }) 
@@ -136,12 +125,6 @@ const mainMenuTemplate = [
                 label: 'Add Item',
                 click(){
                     createAddWindow();
-                }
-            },
-            {
-                label: 'Clear Items',
-                click(){
-                    mainWindow.webContents.send('item:clear');
                 }
             },
             {
@@ -164,8 +147,8 @@ const mainMenuTemplate = [
 function createAddWindow() {
     addWindow = new BrowserWindow(
         {webPreferences: { nodeIntegration: true},
-        width: 600,
-        height: 800,
+        width: 800,
+        height: 1000,
         title: 'Add Shopping List Item'
     });
     // Load HTML file into window
@@ -231,7 +214,16 @@ function downloadableCSV(rows) {
     return encodeURI(content);
   }
   
-  
+  function arrayToCSV(objArray) {
+    const array = typeof objArray !== 'object' ? JSON.parse(objArray) : objArray;
+    let csvContent = "data:text/csv;charset=utf-8,";
+    let str = csvContent + `${Object.keys(array[0]).map(value => `"${value}"`).join(",")}` + '\r\n';
+
+    return array.reduce((str, next) => {
+        str += `${Object.values(next).map(value => `"${value}"`).join(",")}` + '\r\n';
+        return str;
+       }, str);
+}
   
 
 

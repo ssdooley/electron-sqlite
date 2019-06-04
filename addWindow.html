@@ -1,40 +1,47 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Add Shopping List Item</title>
+    <title>Sign In</title>
     <link rel="stylesheet"
           href="node_modules/bootstrap/dist/css/bootstrap.min.css">
 </head>
 <body>
-    <div class="container">
+    <div class="needs-validation" novalidate>
         <form>
             <div class="form-group">
-                <label for="firstName">First Name</label>
-                <input type="text" class="form-control" id="firstName" placeholder="Enter First Name">
+                <label for="firstName" for="firstName">First Name</label>
+                <input type="text" class="form-control" id="firstName" placeholder="Enter First Name" required>
             </div>
             <div class="form-group">
                 <label for="lastName">Last Name</label>
-                <input type="text" class="form-control" id="lastName" placeholder="Enter Last Name">
+                <input type="text" class="form-control" id="lastName" placeholder="Enter Last Name" required>
             </div>
             <div class="form-group"> 
                 <label for="roomNumber">Room Number</label>
-                <input type="text" class="form-control" id="roomNumber" placeholder="Enter Your Room Number">
+                <input type="text" class="form-control" id="roomNumber" placeholder="Enter Your Room Number" required>
             </div>
             <div class="form-group">
                 <label for="cellPhone">Cell Phone</label>
-                <input type="text" class="form-control" id="cellPhone" placeholder="Enter Cell Phone Number" aria-describedby="phoneHelp">
+                <input type="text" class="form-control" id="cellPhone" placeholder="Enter Cell Phone Number" aria-describedby="phoneHelp" required>
                 <small id="phoneHelp" class="form-text text-muted">**Only if Phone Number is US based number. ie. 1-xxx-xxx-xxxx</small>
             </div>
             <div class="form-group">
                 <label for="emergencyContactName">Emergency Contact Name</label>
-                <input type="text" class="form-control" id="emergencyContactName" placeholder="Emergency Contact Name">
+                <input type="text" class="form-control" id="emergencyContactName" placeholder="Emergency Contact Name" required>
             </div>
             <div class="form-group">
                 <label for="emergencyContactNumber">Emergency Contact Number</label>
-                <input type="text" class="form-control" id="emergencyContactNumber" aria-describedby="emergHelp" placeholder="Emergency Contact Number">
+                <input type="text" class="form-control" id="emergencyContactNumber" aria-describedby="emergHelp" placeholder="Emergency Contact Number" required>
                 <small id="emergHelp" class="form-text text-muted">**This number can be in/outside of the United States</small>
             </div>
 
+            <div id="camdemo" style="width: 320px; height: 240px; text-align: center; margin: 0 auto;"></div>
+            <br>
+            <div style="text-align: center">
+                <input type="button" id="start" class="btn btn-info" value="Start / Shut down camera">
+                <input type="button" id="savefile" class="btn btn-success" value="Save photo in Desktop">
+            </div>
+            
             <button class="btn btn-primary" type="submit">Submit</button>
         </form>
     </div>
@@ -44,20 +51,106 @@
         const {ipcRenderer} = electron;
         const form = document.querySelector('form');
         form.addEventListener('submit', submitForm);
+        var enabled = false;
+        var WebCamera = require("webcamjs");
+        const dialog = require('electron').remote.dialog;
+        var fs = require('fs');
 
         function submitForm(e){
-            e.preventDefault();
-            const firstName = document.querySelector('#firstName').value;
-            const lastName = document.querySelector('#lastName').value;
-            const roomNumber = document.querySelector('#roomNumber').value;
-            const cellPhone = document.querySelector('#cellPhone').value;
-            const emergencyContactName = document.querySelector('#emergencyContactName').value;
-            const emergencyContactNumber = document.querySelector('#emergencyContactNumber').value;
+                e.preventDefault();
+                const firstName = document.querySelector('#firstName').value;
+                const lastName = document.querySelector('#lastName').value;
+                const roomNumber = document.querySelector('#roomNumber').value;
+                const cellPhone = document.querySelector('#cellPhone').value;
+                const emergencyContactName = document.querySelector('#emergencyContactName').value;
+                const emergencyContactNumber = document.querySelector('#emergencyContactNumber').value;
 
-            var candidateInfo = {firstName, lastName, roomNumber, cellPhone, emergencyContactName, emergencyContactNumber}
+                var candidateInfo = {firstName, lastName, roomNumber, cellPhone, emergencyContactName, emergencyContactNumber}
 
-            ipcRenderer.send('info:add', candidateInfo);
+                ipcRenderer.send('info:add', candidateInfo);           
         }
+
+        document.getElementById("start").addEventListener('click', function() {
+            if(!enabled){
+                enabled = true;
+                WebCamera.attach('#camdemo');
+                console.log("The camera has been started");
+            } else {
+                enabled = false;
+                WebCamera.reset();
+                console.log("The camera has been disabled")
+            }
+        },false);
+
+        function processBase64Image(dataString) {
+            var matches = dataString.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/),response = {};
+
+            if (matches.length !== 3) {
+            return new Error('Invalid input string');
+            }
+
+            response.type = matches[1];
+            response.data = new Buffer(matches[2], 'base64');
+
+            return response;
+        }
+
+        document.getElementById("savefile").addEventListener('click',function(){
+            console.log("from inside savefile get element");
+            if (document.querySelector('#firstName').value === null ||
+            document.querySelector('#lastName').value === null) {
+                require("electron").remote.dialog.showErrorBox("No Image Name" ,"First Name and Last Name must not be black in order to use the camera");
+                return "false";
+            } else {
+                var imageName = document.querySelector('#firstName').value + "." + document.querySelector('#lastName').value
+                if(enabled){
+                    WebCamera.snap(function(data_uri) {
+                    // Save the image in a variable
+                        var imageBuffer = processBase64Image(data_uri);
+                    // Start the save dialog to give a name to the file
+                            require("electron").remote.dialog.showSaveDialog({
+                            filters: [
+                                { name: 'Images', extensions: ['png'] },
+                            ]
+                        },function (fileName) {
+                            if (fileName === undefined){
+                                console.log("You didn't save the file because you exit or didn't give a name");
+                                return;
+                            }
+                            // If the user gave a name to the file, then save it
+                            // using filesystem writeFile function
+                            fs.writeFile(fileName, imageBuffer.data, function(err) {
+                                if(err){
+                                    console.log("Cannot save the file :'( time to cry !");
+                                }else{
+                                    alert("Image saved succesfully");
+                                }
+                            });
+                        });
+                    });
+                }else{
+                    console.log("Please enable the camera first to take the snapshot !");
+                }
+            }
+        },false);
+
+        (function () {
+                'use strict';
+                window.addEventListener('load', function () {
+                    // Fetch all the forms we want to apply custom Bootstrap validation styles to
+                    var forms = document.getElementsByClassName('needs-validation');
+                    // Loop over them and prevent submission
+                    var validation = Array.prototype.filter.call(forms, function (form) {
+                        form.addEventListener('submit', function (event) {
+                            if (form.checkValidity() === false) {
+                                event.preventDefault();
+                                event.stopPropagation();
+                            }
+                            form.classList.add('was-validated');
+                        }, false);
+                    });
+                }, false);
+            })();
     </script>
 </body>
 </html>

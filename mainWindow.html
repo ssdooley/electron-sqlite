@@ -10,26 +10,12 @@
         <button type="button" id="createCandidate" class="btn btn-primary btn-lg">Sign In</button>        
     </div>
     <script>
-            const electron = require("electron");
-            const ipc = electron.ipcRenderer;
-            // document.addEventListener("DOMContentLoaded", function() {
-            //     ipc.send("mainWindowLoaded")
-            //     ipc.on("resultSent", function(evt, result){
-            //         let resultEl = document.getElementById("result");
-            //         console.log(result);
-            //         resultEl.innerHTML = '';
-            //         for(var i = 0; i < result.length; i++) {
-            //             resultEl.innerHTML += "First Name: " + result[i].FirstName.toString() + "<br/>";
-                        
-            //         }
-                    
-            //     });
-            // });
+        const electron = require("electron");
+        const ipc = electron.ipcRenderer;
     
         document.getElementById('createCandidate').addEventListener('click', () => {
-        console.log("from mainWindows.js");
             ipc.send('add-candidate-window')
         })
-        </script>
+    </script>
 </body>
 </html>
