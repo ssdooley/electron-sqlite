@@ -1,0 +1,63 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Add Shopping List Item</title>
+    <link rel="stylesheet"
+          href="node_modules/bootstrap/dist/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container">
+        <form>
+            <div class="form-group">
+                <label for="firstName">First Name</label>
+                <input type="text" class="form-control" id="firstName" placeholder="Enter First Name">
+            </div>
+            <div class="form-group">
+                <label for="lastName">Last Name</label>
+                <input type="text" class="form-control" id="lastName" placeholder="Enter Last Name">
+            </div>
+            <div class="form-group"> 
+                <label for="roomNumber">Room Number</label>
+                <input type="text" class="form-control" id="roomNumber" placeholder="Enter Your Room Number">
+            </div>
+            <div class="form-group">
+                <label for="cellPhone">Cell Phone</label>
+                <input type="text" class="form-control" id="cellPhone" placeholder="Enter Cell Phone Number" aria-describedby="phoneHelp">
+                <small id="phoneHelp" class="form-text text-muted">**Only if Phone Number is US based number. ie. 1-xxx-xxx-xxxx</small>
+            </div>
+            <div class="form-group">
+                <label for="emergencyContactName">Emergency Contact Name</label>
+                <input type="text" class="form-control" id="emergencyContactName" placeholder="Emergency Contact Name">
+            </div>
+            <div class="form-group">
+                <label for="emergencyContactNumber">Emergency Contact Number</label>
+                <input type="text" class="form-control" id="emergencyContactNumber" aria-describedby="emergHelp" placeholder="Emergency Contact Number">
+                <small id="emergHelp" class="form-text text-muted">**This number can be in/outside of the United States</small>
+            </div>
+
+            <button class="btn btn-primary" type="submit">Submit</button>
+        </form>
+    </div>
+    <script>
+
+        const electron = require('electron');
+        const {ipcRenderer} = electron;
+        const form = document.querySelector('form');
+        form.addEventListener('submit', submitForm);
+
+        function submitForm(e){
+            e.preventDefault();
+            const firstName = document.querySelector('#firstName').value;
+            const lastName = document.querySelector('#lastName').value;
+            const roomNumber = document.querySelector('#roomNumber').value;
+            const cellPhone = document.querySelector('#cellPhone').value;
+            const emergencyContactName = document.querySelector('#emergencyContactName').value;
+            const emergencyContactNumber = document.querySelector('#emergencyContactNumber').value;
+
+            var candidateInfo = {firstName, lastName, roomNumber, cellPhone, emergencyContactName, emergencyContactNumber}
+
+            ipcRenderer.send('info:add', candidateInfo);
+        }
+    </script>
+</body>
+</html>

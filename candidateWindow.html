@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="stylesheet" href="node_modules/bootstrap/dist/css/bootstrap.min.css">
+    <title>CANDIDATES</title>    
+    
+</head>
+<body>
+    <form>
+        <input id="download" type="button" value="Download" class="btn btn-primary btn-sm">
+    </form>
+    <ul class="list-group">
+        <li class="nav-header disabled"><a>Candidates</a></li>
+        <li class="list-group-item" id="result"></li>
+    </ul>
+
+    <script>
+        const electron = require("electron");
+        const ipc = electron.ipcRenderer;
+        document.addEventListener("DOMContentLoaded", function() {
+            ipc.send("candidateWindowLoaded")
+            ipc.on("resultSent", function(evt, result){
+                let resultEl = document.getElementById("result");
+                console.log(result);
+                resultEl.innerHTML = '';
+                for(var i = 0; i < result.length; i++) {
+                    resultEl.innerHTML += result[i].FirstName.toString() + " " + result[i].LastName.toString() + "<br/>";
+                }
+                    
+            });
+            ipc.on("csvData", function(evt, result){
+            var rows = new Array;
+            rows = result;
+            console.log(rows);
+
+            let csvContent = "data:text/csv;charset=utf-8,";
+
+            rows.forEach(function(rowArray) {
+                let row = rowArray.join(",");
+                csvContent += row + "\r\n";
+            });
+            var encodedUri = encodeURI(csvContent);
+            window.open(encodedUri);
+        });
+            
+        document.getElementById('download').addEventListener('click', () => {
+        ipc.send('download-csv')    
+        })
+    });
+        
+        </script>
+</body>
+</html>
