@@ -36,7 +36,8 @@ app.on("ready", () => {
 
     let mainWindow = new BrowserWindow({ 
         webPreferences: { nodeIntegration: true},
-        height: 800, width: 800, show: false, kiosk: true });
+        height: 800, width: 800, show: false, kiosk: false });
+        //height: 800, width: 800, show: false, kiosk: false });
         mainWindow.loadURL(url.format({        
         // or mainWindow.loadURL(`file://${__dirname}/mainWindow.html`)
         pathname: path.join(__dirname, 'mainWindow.html'),
@@ -47,7 +48,11 @@ app.on("ready", () => {
     mainWindow.once("ready-to-show", () => {mainWindow.show() });
 
     ipcMain.on("mainWindowLoaded", function () {
-        mainWindow.setKiosk(true);
+        if (process.env.NODE_ENV !== 'production') {
+            mainWindow.setKiosk(true);
+        } else {
+            mainWindow.setKiosk(false);
+        }        
         knex.select("FirstName").from("Users")
         .returning()
         .then(data => {          
@@ -57,7 +62,11 @@ app.on("ready", () => {
                 knex.insert(insert1).into("Users")
                 .then(function (rows) {
                     candidateWindow.webContents.send("resultSent", rows);
-                    mainWindow.setKiosk(true);                    
+                    if (process.env.NODE_ENV !== 'production') {
+                        mainWindow.setKiosk(true);
+                    } else {
+                        mainWindow.setKiosk(false);
+                    }                         
                 });
             }; 
             if (data.length >= 1){
@@ -65,15 +74,25 @@ app.on("ready", () => {
                 let result = knex.select("FirstName").from("Users")
                     result.then(function(rows){
                         candidateWindow.webContents.send("resultSent", rows);
-                        mainWindow.setKiosk(true);                        
+                        if (process.env.NODE_ENV !== 'production') {
+                            mainWindow.setKiosk(true);
+                        } else {
+                            mainWindow.setKiosk(false);
+                        }                             
                     });     
                 };            
         });
     });
 
     ipcMain.on("add-candidate-window", () => {
+        console.log("This is from the add candidate call")
         createAddWindow();
-    })   
+    })  
+    
+    ipcMain.on("open-webcam-window", () => {
+        console.log("recieved from AddWindow")
+        createCamWindow();
+    })
     
     ipcMain.on('info:add', function(e, candidateInfo){
         var candidate = [{FirstName: candidateInfo.firstName, 
@@ -89,7 +108,11 @@ app.on("ready", () => {
                         .returning()
                         .then(data => {  
                         candidateWindow.webContents.send("resultSent", data);
-                            mainWindow.setKiosk(true);                        
+                        if (process.env.NODE_ENV !== 'production') {
+                            mainWindow.setKiosk(true);
+                        } else {
+                            mainWindow.setKiosk(false);
+                        }                             
                         });
                     });
         
@@ -103,6 +126,10 @@ app.on("ready", () => {
             candidateWindow.webContents.send("resultSent", data);
         });
     });
+
+    ipcMain.on('enable-submit', function() {
+        addWindow.webContents.send("enable-submit");
+    })
 
     ipcMain.on('download-csv', function() {
         knex.select().from("Users").returning()
@@ -149,7 +176,7 @@ function createAddWindow() {
         {webPreferences: { nodeIntegration: true},
         width: 800,
         height: 1000,
-        title: 'Add Shopping List Item'
+        title: 'Add New Candidate'
     });
     // Load HTML file into window
     addWindow.loadURL(url.format({
@@ -161,6 +188,26 @@ function createAddWindow() {
     // Garbage collection handel
     addWindow.on('close', function() {
         addWindow = null;
+    });
+}
+
+function createCamWindow() {
+    camWindow = new BrowserWindow(
+        {webPreferences: { nodeIntegration: true},
+        width: 600,
+        height: 800,
+        title: 'Camera'
+    });
+    // Load HTML file into window
+    camWindow.loadURL(url.format({
+        pathname: path.join(__dirname, 'camWindow.html'),
+        protocol: 'file:',
+        slashes: true
+    }));    
+    
+    // Garbage collection handel
+    camWindow.on('close', function() {
+        camWindow = null;
     });
 }
 
